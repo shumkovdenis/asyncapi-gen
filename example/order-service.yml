@@ -1,0 +1,82 @@
+asyncapi: 3.0.0
+info:
+  title: Order Service
+  version: "1.0.0"
+
+operations:
+  sendUpdateInventory:
+    action: send
+    channel:
+      $ref: "#/channels/updateInventory"
+    messages:
+      - $ref: "#/channels/updateInventory/messages/UpdateInventory"
+
+  sendOrderCreated:
+    action: send
+    channel:
+      $ref: "#/channels/order"
+    messages:
+      - $ref: "#/channels/order/messages/OrderCreated"
+
+  sendOrderCancelled:
+    action: send
+    channel:
+      $ref: "#/channels/order"
+    messages:
+      - $ref: "#/channels/order/messages/OrderCancelled"
+
+  receiveUpdateInventory:
+    action: receive
+    channel:
+      $ref: "#/channels/updateInventory"
+    messages:
+      - $ref: "#/channels/updateInventory/messages/UpdateInventory"
+
+  receiveOrderCreated:
+    action: receive
+    channel:
+      $ref: "#/channels/order"
+    messages:
+      - $ref: "#/channels/order/messages/OrderCreated"
+
+  receiveOrderCancelled:
+    action: receive
+    channel:
+      $ref: "#/channels/order"
+    messages:
+      - $ref: "#/channels/order/messages/OrderCancelled"
+
+channels:
+  updateInventory:
+    address: inventory.update
+    messages:
+      UpdateInventory:
+        $ref: "#/components/messages/UpdateInventory"
+
+  order:
+    address: order
+    messages:
+      OrderCreated:
+        $ref: "#/components/messages/OrderCreated"
+      OrderCancelled:
+        $ref: "#/components/messages/OrderCancelled"
+
+components:
+  messages:
+    UpdateInventory:
+      payload:
+        schemaFormat: "application/vnd.apache.avro+yaml;version=1.9.0"
+        schema:
+          $ref: "./update_inventory.avsc"
+
+    OrderCancelled:
+      payload:
+        schemaFormat: "application/vnd.apache.avro+yaml;version=1.9.0"
+        schema:
+          $ref: "./order_cancelled.avsc"
+
+    OrderCreated:
+      payload:
+        schemaFormat: "application/vnd.apache.avro+yaml;version=1.9.0"
+        schema:
+          $ref: "./order_created.avsc"

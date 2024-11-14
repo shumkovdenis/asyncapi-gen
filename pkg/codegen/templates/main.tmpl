@@ -1,0 +1,16 @@
+{{ template "imports" . }}
+
+{{ if len .EventBusOperations -}}
+{{ template "event_bus_common" -}}
+{{ template "event_bus" . }}
+{{- end }}
+
+{{- if len .EventProcessorOperations }}
+{{ template "event_processor" . }}
+{{- end }}
+
+{{ template "avro_marshaler" }}
+
+{{ template "schema_provider_common" }}
+
+{{ template "schema_provider" . }}

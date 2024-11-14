@@ -1,0 +1,18 @@
+{
+    "name": "OrderCreatedEvent",
+    "type": "record",
+    "fields": [
+        {
+            "name": "orderId",
+            "type": "string"
+        },
+        {
+            "name": "userId",
+            "type": "string"
+        },
+        {
+            "name": "amount",
+            "type": "int"
+        }
+    ]
+}

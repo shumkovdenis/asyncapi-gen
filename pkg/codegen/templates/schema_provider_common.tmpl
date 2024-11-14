@@ -1,0 +1,82 @@
+{{ define "schema_provider_common" -}}
+
+type schemaProvider struct {
+	RegistryClient *registry.Client
+
+	schemaCache schemaInfoCache
+	nameCache   sync.Map
+}
+
+type schemaInfo struct {
+	ID     uint32
+	Schema avro.Schema
+}
+
+func (p *schemaProvider) GetSchema(id uint32) (avro.Schema, error) {
+	return p.RegistryClient.GetSchema(context.Background(), int(id))
+}
+
+func (p *schemaProvider) GetName(id uint32) (string, error) {
+	nameVal, ok := p.nameCache.Load(id)
+	if ok {
+		name, ok := nameVal.(string)
+		if ok {
+			return name, nil
+		}
+	}
+
+	schema, err := p.RegistryClient.GetSchema(context.Background(), int(id))
+	if err != nil {
+		return "", err
+	}
+
+	name, err := schemaName(schema)
+	if err != nil {
+		return "", err
+	}
+
+	p.nameCache.Store(id, name)
+
+	return name, nil
+}
+
+func (p *schemaProvider) createSchema(
+	ctx context.Context, topic string, dataSchema string,
+) (schemaInfo, error) {
+	schema, err := avro.Parse(dataSchema)
+	if err != nil {
+		return schemaInfo{}, err
+	}
+
+	name, err := schemaName(schema)
+	if err != nil {
+		return schemaInfo{}, err
+	}
+
+	subject := subjectName(topic, name)
+
+	id, schema, err := p.RegistryClient.CreateSchema(ctx, subject, dataSchema)
+	if err != nil {
+		return schemaInfo{}, err
+	}
+
+	return schemaInfo{
+		ID:     uint32(id),
+		Schema: schema,
+	}, nil
+}
+
+func schemaName(schema avro.Schema) (string, error) {
+	namedSchema, ok := schema.(avro.NamedSchema)
+	if !ok {
+		return "", errors.New("schema is not named")
+	}
+
+	return namedSchema.FullName(), nil
+}
+
+func subjectName(topic string, name string) string {
+	return topic + "-" + name
+}
+
+{{- end }}

@@ -1,0 +1,67 @@
+services:
+  server:
+    build: .
+    restart: unless-stopped
+    volumes:
+      - ./:/go/src/app
+    depends_on:
+      - kafka
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    restart: unless-stopped
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:latest
+    restart: unless-stopped
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: "zookeeper:2181"
+      SCHEMA_REGISTRY_LISTENERS: http://schema-registry:8081
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka:9092,PLAINTEXT_INTERNAL://localhost:19092
+      SCHEMA_REGISTRY_DEBUG: "true"
+    ports:
+      - "8081:8081"
+    depends_on:
+      - kafka
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    restart: unless-stopped
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_INTERNAL://localhost:19092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    ports:
+      - "19092:19092"
+    depends_on:
+      - zookeeper
+
+  redpandadata-console:
+    image: docker.redpanda.com/redpandadata/console:latest
+    restart: unless-stopped
+    entrypoint: /bin/sh
+    command: -c "echo \"$$CONSOLE_CONFIG_FILE\" > /tmp/config.yml; /app/console"
+    environment:
+      CONFIG_FILEPATH: /tmp/config.yml
+      CONSOLE_CONFIG_FILE: |
+        kafka:
+          brokers: ["kafka:9092"]
+          schemaRegistry:
+            enabled: true
+            urls: ["http://schema-registry:8081"]
+    ports:
+      - "8092:8080"
+    depends_on:
+      - kafka
+      - schema-registry
+
+volumes:
+  kafka:

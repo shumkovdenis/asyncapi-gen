@@ -1,0 +1,35 @@
+{{ define "event_bus" -}}
+
+{{- range $opKey, $op := $.EventBusOperations }}
+{{- $msg := index $op.Messages 0 }}
+{{- $schema := index $.AvroSchemas $msg.Follow.Reference }}
+{{- $msgName := pascal $schema.Name }}
+
+func (b EventBus) {{ pascal $opKey }}(
+	ctx context.Context, 
+	msg *{{ $msgName }},
+) error {
+	return b.eventBus.Publish(ctx, msg)
+}
+
+{{- end }}
+
+func generatePublishTopic(
+	params cqrs.GenerateEventPublishTopicParams,
+) (string, error) {
+	switch params.Event.(type) {
+	{{- range $chKey, $ch := $.Channels }}
+	{{- range $msgKey, $msg := $ch.Follow.Messages }}
+	{{- $schema := index $.AvroSchemas $msg.Reference }}
+	{{- $msgName := pascal $schema.Name }}
+	case *{{ $msgName }}:
+		return "{{ $ch.Address }}", nil
+
+	{{- end }}
+	{{- end }}
+	}
+
+	return "", errors.New("unknown message")
+}
+
+{{- end }}

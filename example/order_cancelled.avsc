@@ -1,0 +1,14 @@
+{
+    "name": "OrderCancelledEvent",
+    "type": "record",
+    "fields": [
+        {
+            "name": "orderId",
+            "type": "string"
+        },
+        {
+            "name": "userId",
+            "type": "string"
+        }
+    ]
+}

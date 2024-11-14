@@ -1,0 +1,52 @@
+{{ define "schema_provider" -}}
+
+type schemaInfoCache struct {
+{{- range $.AvroSchemas }}
+	{{ pascal .Name }} schemaInfo
+{{- end }}
+}
+
+func (p *schemaProvider) GetSchemaInfo(val any) (schemaInfo, error) {
+	switch val.(type) {
+	{{- range $.AvroSchemas }}
+	case *{{ pascal .Name }}:
+		return p.schemaCache.{{ pascal .Name }}, nil
+	{{- end }}
+	}
+
+	return schemaInfo{}, errors.New("unknown schema")
+}
+
+func (p *schemaProvider) GenerateName(v any) string {
+	switch v.(type) {
+	{{- range $.AvroSchemas }}
+	case *{{ pascal .Name }}:
+		return "{{ .FullName }}"
+	{{- end }}
+	}
+
+	return "unknown"
+}
+
+func (p *schemaProvider) RegisterSchemes() error {
+	ctx := context.Background()
+
+	var err error
+
+	{{- range $chKey, $ch := $.Channels }}
+	{{- range $msgKey, $msg := $ch.Follow.Messages }}
+	{{- $schema := index $.AvroSchemas $msg.Reference }}
+	{{- $msgName := pascal $schema.Name }}
+
+	p.schemaCache.{{ $msgName }}, err = p.createSchema(ctx, "{{ $ch.Follow.Address }}", `{{ $schema.String }}`)
+	if err != nil {
+		return err
+	}
+
+	{{- end }}
+	{{- end }}
+
+	return nil
+}
+
+{{- end }}
